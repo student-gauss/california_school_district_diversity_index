@@ -1,1 +1,2 @@
-# california_school_district_diversity_index
+# California School District Diversity Index
+
