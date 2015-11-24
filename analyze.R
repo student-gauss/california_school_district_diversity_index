@@ -3,7 +3,6 @@ library(RJSONIO)
 library(plyr)
 library(ggmap)
 library(ggthemes)
-library(viridis)
 
 google_map_url <- function(address, return.call = "json", sensor = "false") {
   root <- "http://maps.google.com/maps/api/geocode/"
@@ -25,9 +24,8 @@ geo_code <- function(address,verbose=FALSE) {
         location_type  <- x$results[[1]]$geometry$location_type
         formatted_address  <- x$results[[1]]$formatted_address
         return(c(lat, lng, location_type, formatted_address))
-        Sys.sleep(0.5)
     } else {
-        return(c(NA,NA,NA, NA))
+        return(c(NA, NA, NA, NA))
     }
 }
 
@@ -125,5 +123,3 @@ mapPoints <- mapPoints + theme_map()
 mapPoints <- mapPoints + theme(legend.position="right" )
 mapPoints
 
-## api13gtx$AS_API13.clean <- as.numeric(api13gtx$AS_API13)
-## api13gtx[,numeric_column] <- as.numeric(unlist(api13gtx[,numeric_column]))
