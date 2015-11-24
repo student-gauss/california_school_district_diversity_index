@@ -3,15 +3,43 @@ Title: California School District Ethnic Diversity
 ---
 # Introduction
 
-Hello World.
+
+
+# Analysis
+
+## Load needed libraries
+
+These libraries are loaded.
 
 ```{r}
 library(RCurl)
 library(RJSONIO)
-library(plyr)
 library(ggmap)
 library(ggthemes)
+```
+## Download data files
+```{r}
+## Download California API score data file for 2013
+download.file(url="http://www3.cde.ca.gov/researchfiles/api/api13gtx.zip",
+              destfile="api13gtx.zip")
 
+## Unzip it.
+unzip(zipfile="api13gtx.zip")
+```
+## Load Record Layout file
+
+```{r}
+record_def <- read.csv("record_def.csv", header=FALSE)
+colnames(record_def) <- c("index",
+                          "colname",
+                          "type",
+                          "fieldsize",
+                          "description")
+```
+
+
+
+```{r}
 google_map_url <- function(address, return.call = "json", sensor = "false") {
   root <- "http://maps.google.com/maps/api/geocode/"
   u <- paste(root, return.call, "?address=", address, "&sensor=", sensor, sep = "")
@@ -47,8 +75,6 @@ colnames(record_def) <- c("index",
                           "type",
                           "fieldsize",
                           "description")
-
-print(head(record_def))
 
 ```
 

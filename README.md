@@ -3,16 +3,47 @@ Title: California School District Ethnic Diversity
 ---
 # Introduction
 
-Hello World.
+
+
+# Analysis
+
+## Load needed libraries
+
+These libraries are loaded.
 
 
 ```r
 library(RCurl)
 library(RJSONIO)
-library(plyr)
 library(ggmap)
 library(ggthemes)
+```
+## Download data files
 
+```r
+## Download California API score data file for 2013
+download.file(url="http://www3.cde.ca.gov/researchfiles/api/api13gtx.zip",
+              destfile="api13gtx.zip")
+
+## Unzip it.
+unzip(zipfile="api13gtx.zip")
+```
+## Load Record Layout file
+
+
+```r
+record_def <- read.csv("record_def.csv", header=FALSE)
+colnames(record_def) <- c("index",
+                          "colname",
+                          "type",
+                          "fieldsize",
+                          "description")
+```
+
+
+
+
+```r
 google_map_url <- function(address, return.call = "json", sensor = "false") {
   root <- "http://maps.google.com/maps/api/geocode/"
   u <- paste(root, return.call, "?address=", address, "&sensor=", sensor, sep = "")
@@ -48,25 +79,6 @@ colnames(record_def) <- c("index",
                           "type",
                           "fieldsize",
                           "description")
-
-print(head(record_def))
-```
-
-```
-##   index colname      type fieldsize
-## 1     1     CDS Character        14
-## 2     2   RTYPE Character         1
-## 3     3   STYPE Character         1
-## 4     4    SPED Character         1
-## 5     5    SIZE Character         1
-## 6     6 CHARTER Character         1
-##                                                                                                                               description
-## 1                                                                                                             County/District/School code
-## 2                                                                                              Record Type: D=District, S=School, X=State
-## 3 Type: 1=Unified, 2=Elementary District, 3=9-12 High District, 4=7-12 High District, E=Elementary School, M=Middle School, H=High School
-## 4                   A= Alternative Schools Accountability Model (ASAM), E=Special Education, and C=Combination ASAM and Special Education
-## 5                                                                           S=Small (11-99 Valid API Scores), T=Under 11 Valid API Scores
-## 6                                                       Y=Charter, Not Direct Funded, D=Direct Funded Charter, Blank=Not a Charter School
 ```
 
 
