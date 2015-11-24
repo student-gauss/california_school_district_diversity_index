@@ -13,20 +13,22 @@ These libraries are loaded.
 
 ```{r}
 
-library(RCurl)
-library(RJSONIO)
 library(ggmap)
 library(ggthemes)
+
+races <- c("AA", "AI", "AS", "FI", "HI", "PI", "WH", "MR")
 
 ```
 ## Download data files
 ```{r}
 
-## Download 2013 Growth API file
-download.file(url="http://www3.cde.ca.gov/researchfiles/api/api13gtx.zip",
-              destfile="api13gtx.zip")
-## Unzip it.
-unzip(zipfile="api13gtx.zip")
+download_data_file <- function() {
+    ## Download 2013 Growth API file
+    download.file(url="http://www3.cde.ca.gov/researchfiles/api/api13gtx.zip",
+                  destfile="api13gtx.zip")
+    ## Unzip it.
+    unzip(zipfile="api13gtx.zip")
+}
 
 ```
 ## Prepare Record Layout file
@@ -35,87 +37,80 @@ The record layout is defined in http://www.cde.ca.gov/ta/ac/ap/reclayout13g.asp.
 
 
 ```{r}
+record_layout <- function() {
+    record_def <- read.csv("record_def.csv", header=FALSE)
+    colnames(record_def) <- c("index",
+                              "colname",
+                              "type",
+                              "fieldsize",
+                              "description")
 
-record_def <- read.csv("record_def.csv", header=FALSE)
-colnames(record_def) <- c("index",
-                          "colname",
-                          "type",
-                          "fieldsize",
-                          "description")
+    ## Set some columns' class.
+    numeric_column <-
+        c("VALID",
+          "API13",
+          unlist(lapply(c("NUM", "API13"), function(score) paste(races, score, sep="_") ) ) )
+    character_column <- c("SNAME")
 
-## Set some columns' class.
-races <- c("AA", "AI", "AS", "FI", "HI", "PI", "WH", "MR")
+    column_classes <- rbind(
+        data.frame( colname=numeric_column, class="numeric", stringsAsFactors=FALSE),
+        data.frame( colname=character_column, class="character", stringsAsFactors=FALSE))
 
-numeric_column <-
-    c("VALID",
-      "API13",
-      unlist(lapply(c("NUM", "API13"), function(score) paste(races, score, sep="_") ) ) )
-character_column <- c("SNAME")
+    record_definition_table <- merge(record_def,
+                                     column_classes,
+                                     by="colname",
+                                     all=TRUE,
+                                     sort=FALSE)
 
-column_classes <- rbind(
-    data.frame( colname=numeric_column, class="numeric", stringsAsFactors=FALSE),
-    data.frame( colname=character_column, class="character", stringsAsFactors=FALSE))
+    record_definition_table <- record_definition_table[order(record_definition_table$index),]
+    record_definition_table[which(is.na(record_definition_table$class)), "class"] <- "character"
 
-record_definition_table <- merge(record_def,
-                                 column_classes,
-                                 by="colname",
-                                 all=TRUE,
-                                 sort=FALSE)
-
-record_definition_table <- record_definition_table[order(record_definition_table$index),]
-record_definition_table[which(is.na(record_definition_table$class)), "class"] <- "character"
-
+    return(record_definition_table)
+}
 ```
 
 ## Load Data File
-
 ```{r}
-
-api13gtx <- read.fwf("api13gtx.txt",
-                     width=record_definition_table$fieldsize,
-                     col.names=record_definition_table$colname,
-                     colClasses=record_definition_table$class, comment.char="")
-
-## Clean up NA
-colnames_to_use_0_for_na <- c(paste(races, "NUM", sep="_"), "VALID")
-for(colname in colnames_to_use_0_for_na) {
-    api13gtx[is.na(api13gtx[,colname]), colname] <- 0
+district_data_frame <- function() {
+    download_data_file()
+    
+    record_definition_table <- record_layout()
+    
+    api13gtx <- read.fwf("api13gtx.txt",
+                         width=record_definition_table$fieldsize,
+                         col.names=record_definition_table$colname,
+                         colClasses=record_definition_table$class, comment.char="")
+    
+    ## Clean up NA
+    colnames_to_use_0_for_na <- c(paste(races, "NUM", sep="_"), "VALID")
+    for(colname in colnames_to_use_0_for_na) {
+        api13gtx[is.na(api13gtx[,colname]), colname] <- 0
+    }
+    
+    district <- api13gtx[api13gtx$RTYPE == "D",]
+    return(district)
 }
-
-school <- api13gtx[api13gtx$RTYPE == "S",]
-district <- api13gtx[api13gtx$RTYPE == "D",]
-state <- api13gtx[api13gtx$RTYPE == "X",]
 
 ```
 
-## Define Functions
+## Google Map API
 
 ```{r}
 
-shannon.index <- function(populations) {
-    populations <- as.numeric(populations)
-    total <- sum(populations)
-    ratio <- populations / total
-    entropies <- sapply( ratio, function(p) {
-        p * ifelse(p > 0, log(p, 2), 0)
-    } )
-    return(-sum( entropies ))
-}
+geo_code <- function(address) {
+    library(RCurl)
+    library(RJSONIO)
 
-google_map_url <- function(address, return.call = "json", sensor = "false") {
-  root <- "http://maps.google.com/maps/api/geocode/"
-  u <- paste(root, return.call, "?address=", address, "&sensor=", sensor, sep = "")
-  return(URLencode(u))
-}
-
-geo_code <- function(address,verbose=FALSE) {
-    if(verbose) {
-        cat(address,"\n")
+    google_map_url <- function(address, return.call = "json", sensor = "false") {
+        root <- "http://maps.google.com/maps/api/geocode/"
+        u <- paste(root, return.call, "?address=", address, "&sensor=", sensor, sep = "")
+        return(URLencode(u))
     }
+
     u <- google_map_url(address)
-    doc <- getURL(u)
-    x <- fromJSON(doc,simplify = FALSE)
-    
+    doc <- RCurl::getURL(u)
+    x <- RJSONIO::fromJSON(doc,simplify = FALSE)
+
     if(x$status=="OK") {
         lat <- x$results[[1]]$geometry$location$lat
         lng <- x$results[[1]]$geometry$location$lng
@@ -129,44 +124,66 @@ geo_code <- function(address,verbose=FALSE) {
 
 ```
 
-## Calculate Shannon Index
-
-```{r}
-
-district$shannon_index <- apply(district, 1, function(record) {
-    shannon.index( record[paste(races, "NUM", sep="_")])
-})
-
-school$shannon_index <- apply(school, 1, function(record) {
-    shannon.index( record[paste(races, "NUM", sep="_")])
-})
-
-```
-
 ## Search the location
 
 ```{r, message=FALSE}
 
-geo_data <- sapply(district$DNAME, function (district_name) {
-    Sys.sleep(0.2)
-    name <- paste(district_name, ", California" )
-    geo <- geo_code( name )
+add_geo <- function( district ) {
+    geo_data <- sapply(district$DNAME, function (district_name) {
+        Sys.sleep(0.5)
+        name <- paste(district_name, ", California" )
+        geo <- geo_code( name )
+        
+        print(paste(name, as.numeric(geo[1]), as.numeric(geo[2])))
+        c(DNAME.clean=geo[4],
+          latitude=as.numeric(geo[1]),
+          longitude=as.numeric(geo[2]))
+    })
+    
+    district <- cbind(district, t(geo_data))
+    district$latitude <- as.numeric(as.character(district$latitude))
+    district$longitude <- as.numeric(as.character(district$longitude))
 
-    print(paste(name, as.numeric(geo[1]), as.numeric(geo[2])))
-    c(DNAME.clean=geo[4],
-      latitude=as.numeric(geo[1]),
-      longitude=as.numeric(geo[2]))
-})
+    return(district)
+}
 
-district <- cbind(district, t(geo_data))
-district$latitude <- as.numeric(as.character(district$latitude))
-district$longitude <- as.numeric(as.character(district$longitude))
+```
 
+
+
+## Calculate Shannon Index
+
+```{r}
+add_shannon_index <- function(district) {
+    shannon.index <- function(populations) {
+        populations <- as.numeric(populations)
+        total <- sum(populations)
+        ratio <- populations / total
+        entropies <- sapply( ratio, function(p) {
+            p * ifelse(p > 0, log(p, 2), 0)
+        } )
+        return(-sum( entropies ))
+    }
+    
+    district$shannon_index <- apply(district, 1, function(record) {
+        shannon.index( record[paste(races, "NUM", sep="_")])
+    })
+    return(district)
+}
 ```
 
 ## Plot the map
 
-```{r gmap, fig.width=4, fig.height=5}
+```{r gmap, message=FALSE, fig.width=10, fig.height=12}
+
+if( !file.exists("district.RData") ) {
+    district <- district_data_frame()
+    district <- add_shannon_index(district)
+    district <- add_geo(district)
+    save(district, file="district.RData")
+} else {
+    load("district.RData")
+}
 
 map <- get_map(location = 'Santa Clara, California', zoom=9)
 
