@@ -85,7 +85,7 @@ shannon.index <- function(populations) {
     total <- sum(populations)
     ratio <- populations / total
     entropies <- sapply( ratio, function(p) {
-        p * ifelse(p > 0, log(p), 0)
+        p * ifelse(p > 0, log(p, 2), 0)
     } )
     return(-sum( entropies ))
 }
@@ -100,9 +100,9 @@ school$shannon_index <- apply(school, 1, function(record) {
 
 district$random <- runif(dim(district)[1])
 
-sub.district <- subset(district, random < 0.3)
+sub.district <- subset(district, random < 0.5)
 geo_data <- sapply(sub.district$DNAME, function (district_name) {
-    Sys.sleep(0.5)
+    Sys.sleep(0.2)
     name <- paste(district_name, ", California" )
     geo <- geo_code( name )
 
@@ -116,13 +116,14 @@ sub.district <- cbind(sub.district, t(geo_data))
 sub.district$latitude <- as.numeric(as.character(sub.district$latitude))
 sub.district$longitude <- as.numeric(as.character(sub.district$longitude))
 
-map <- get_map(location = 'California', zoom=6)
+map <- get_map(location = 'Santa Clara, California', zoom=9)
 
 mapPoints <- ggmap(map)
-mapPoints <- mapPoints + geom_point(data=sub.district, aes(x=longitude, y=latitude, color=shannon_index), alpha=0.50, size=5)
-mapPoints <- mapPoints + scale_colour_gradient(name="Shannon Index", low="blue", high="red")
+mapPoints <- mapPoints + geom_point(data=sub.district, aes(x=longitude, y=latitude, color=shannon_index), alpha=1.0, size=3)
+mapPoints <- mapPoints + scale_colour_gradient(name="Shannon Index", low="darkgreen", high="red")
 mapPoints <- mapPoints + theme_map()
 mapPoints <- mapPoints + theme(legend.position="right" )
+mapPoints
 
 ## api13gtx$AS_API13.clean <- as.numeric(api13gtx$AS_API13)
 ## api13gtx[,numeric_column] <- as.numeric(unlist(api13gtx[,numeric_column]))
