@@ -37,6 +37,36 @@ geo_code <- function(address,verbose=FALSE) {
         return(c(NA, NA, NA, NA))
     }
 }
+
+download.file(url="http://www3.cde.ca.gov/researchfiles/api/api13gtx.zip",
+              destfile="api13gtx.zip")
+unzip(zipfile="api13gtx.zip")
+
+record_def <- read.csv("record_def.csv", header=FALSE)
+colnames(record_def) <- c("index",
+                          "colname",
+                          "type",
+                          "fieldsize",
+                          "description")
+
+print(head(record_def))
+```
+
+```
+##   index colname      type fieldsize
+## 1     1     CDS Character        14
+## 2     2   RTYPE Character         1
+## 3     3   STYPE Character         1
+## 4     4    SPED Character         1
+## 5     5    SIZE Character         1
+## 6     6 CHARTER Character         1
+##                                                                                                                               description
+## 1                                                                                                             County/District/School code
+## 2                                                                                              Record Type: D=District, S=School, X=State
+## 3 Type: 1=Unified, 2=Elementary District, 3=9-12 High District, 4=7-12 High District, E=Elementary School, M=Middle School, H=High School
+## 4                   A= Alternative Schools Accountability Model (ASAM), E=Special Education, and C=Combination ASAM and Special Education
+## 5                                                                           S=Small (11-99 Valid API Scores), T=Under 11 Valid API Scores
+## 6                                                       Y=Charter, Not Direct Funded, D=Direct Funded Charter, Blank=Not a Charter School
 ```
 
 
