@@ -88,6 +88,7 @@ district_data_frame <- function() {
     }
     
     district <- api13gtx[api13gtx$RTYPE == "D",]
+    
     return(district)
 }
 
@@ -133,13 +134,12 @@ add_geo <- function( district ) {
         Sys.sleep(0.5)
         name <- paste(district_name, ", California" )
         geo <- geo_code( name )
-        
-        print(paste(name, as.numeric(geo[1]), as.numeric(geo[2])))
+
+        ## print(paste(name, geo[4], as.numeric(geo[1]), as.numeric(geo[2])))
         c(DNAME.clean=geo[4],
           latitude=as.numeric(geo[1]),
           longitude=as.numeric(geo[2]))
     })
-    
     district <- cbind(district, t(geo_data))
     district$latitude <- as.numeric(as.character(district$latitude))
     district$longitude <- as.numeric(as.character(district$longitude))
@@ -187,12 +187,10 @@ if( !file.exists("district.RData") ) {
 
 map <- get_map(location = 'Santa Clara, California', zoom=9)
 
-mapPoints <- ggmap(map)
-mapPoints <- mapPoints + geom_point(data=district, aes(x=longitude, y=latitude, color=shannon_index), alpha=1.0, size=3)
-mapPoints <- mapPoints + scale_colour_gradient(name="Shannon Index", low="darkgreen", high="red")
-mapPoints <- mapPoints + theme_map()
-mapPoints <- mapPoints + theme(legend.position="right" )
-mapPoints
-
-
+map_plots <- ggmap(map)
+map_plots <- map_plots + geom_point(data=district, aes(x=longitude, y=latitude, color=shannon_index), alpha=1.0, size=3)
+map_plots <- map_plots + scale_colour_gradient(name="Shannon Index", low="darkgreen", high="red")
+map_plots <- map_plots + theme_map()
+map_plots <- map_plots + theme(legend.position="right" )
+map_plots
 ```
